@@ -1,140 +1,83 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <raylib.h>
+#include <time.h>
 
-#define GRID_SIZE 8
-#define CELL_SIZE 80
+#define GRID_SIZE 24
+#define CELL_SIZE 30
+#define COLORS 7 // don't make this more that 10
 
-typedef struct Cell
-{
-    int x;
-    int y;
-    char color;
+/*
+Potential features / Next steps:
+- Undo functionality.
+- Animated flood fill (rather than instant).
+- Cellular automata rules for a nicer looking starting grid.
+ */
 
-}Cell;
+void floodfill(int x, int y, Color grid[GRID_SIZE][GRID_SIZE], Color startColor, Color replaceColor);
 
-char ColorCode(int intC);
-void floodfill(int x, int y, Cell (*grid)[8], char startColor,  char replaceColor);
-Color getC(Cell (*grid)[8], int x, int y);
+static Color colors[] = {
+    RED, GREEN, BLUE, YELLOW, PURPLE, SKYBLUE, ORANGE, BROWN, GRAY, GOLD
+};
 
-//creates the grid with random values
+bool ColorEqual(Color a, Color b) {
+    return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a;
+}
+
 int main(void)
 {
-  InitWindow(1920,1080, "Flood-it!");  
+    srand((unsigned int)time(NULL));
+    InitWindow(1920,1080, "Flood-it!");  
 
-  Cell grid[8][8];
-  //GRID INITIALIZE
-  for (int i = 0; i < 8; i++)
-    {
-    for (int j = 0; j < 8; j++)
-      {
-        grid[i][j].x = i;
-        grid[i][j].y = j;
-        int intC = rand()%4;
-
-        grid[i][j].color  = ColorCode(intC);
-      }
+    Color grid[GRID_SIZE][GRID_SIZE] = {0};
+    for (int i = 0; i < GRID_SIZE; i++) {
+        for (int j = 0; j < GRID_SIZE; j++) {
+            int random = rand() % COLORS;
+            grid[i][j] = colors[random];
+        }
     }
 
-    int x;
-    int y;
-    char startC;
-    char replaceC;
-
-    
-  
-    while(!WindowShouldClose())
-    {
+    while(!WindowShouldClose()) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
         //DRAW THE BOXES
-        for (int i = 0; i < 8; i++)
-            {
-            for (int j = 0; j < 8; j++)
-                {
-                    DrawRectangle(j * 80, i * 80, 80, 80, getC(grid, i, j));
-                }
-    }
+        for (int i = 0; i < GRID_SIZE; i++) {
+            for (int j = 0; j < GRID_SIZE; j++) {
+                DrawRectangle(j * CELL_SIZE, i * CELL_SIZE, CELL_SIZE, CELL_SIZE, grid[i][j]);
+            }
+        }
+
         //FLOODFILL
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)){
-            int y = GetMouseX()/80;
-            int x = GetMouseY()/80;
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            int y = GetMouseX()/CELL_SIZE;
+            int x = GetMouseY()/CELL_SIZE;
             printf("X: %i Y: %i\n ", x,y);
-            startC = grid[0][0].color;
-            replaceC = grid[x][y].color;
-            printf("start color: %c ", replaceC);
-            printf("replace color: %c ", replaceC);
+            Color startC = grid[0][0];
+            Color replaceC = grid[x][y];
+            printf("start color: %c\n", replaceC);
+            printf("replace color: %c\n", replaceC);
 
             floodfill(0, 0, grid, startC, replaceC);
         }
+
         EndDrawing();
     }
+
     CloseWindow();
     return 0;
+}
 
-  }
-void floodfill(int x, int y, Cell (*grid)[8], char startColor,  char replaceColor)
+void floodfill(int x, int y, Color grid[GRID_SIZE][GRID_SIZE], Color startColor, Color replaceColor)
 {
+  if (x < 0 || y < 0 || x >= GRID_SIZE || y >= GRID_SIZE) return;
+  if (ColorEqual(grid[x][y], replaceColor)) return;
+  if (!ColorEqual(grid[x][y], startColor)) return;
 
-  if (x<0 || y<0 || x>7 || y>7){
-    return;
-  }
-  if (grid[x][y].color == replaceColor){
-    return;
-  }
-  if (grid[x][y].color != startColor){
-    return;
-  }
+  grid[x][y] = replaceColor;
 
-  grid[x][y].color = replaceColor;
-
-  floodfill(x+1,y ,grid, startColor, replaceColor);
-  floodfill(x-1,y ,grid, startColor, replaceColor);
-  floodfill(x,y+1 ,grid, startColor, replaceColor);
-  floodfill(x,y-1 ,grid, startColor, replaceColor);
+  floodfill(x+1, y, grid, startColor, replaceColor);
+  floodfill(x-1, y, grid, startColor, replaceColor);
+  floodfill(x, y+1, grid, startColor, replaceColor);
+  floodfill(x, y-1, grid, startColor, replaceColor);
 }
-
-char ColorCode(int intC)
-
-
-{
-  char C;
-  if (intC==0){
-    C = 'R';
-  }
-  else if (intC==1)
-  {
-    C = 'G';
-  }
-  else if (intC==2){
-    C = 'B';
-  }
-  else{
-    C = 'Y';
-  }
-  return C;
-}
-
-Color getC(Cell (*grid)[8], int x, int y)
-{   
-    Color color;
-
-    switch (grid[x][y].color)
-    {
-    case 'R':
-        color =RED;
-        break;
-    case 'G':
-        color = GREEN;
-        break;
-    case 'B':
-        color =BLUE;
-        break;
-    case 'Y':
-        color =YELLOW;
-        break;
-    }
-    return color;
-}
-
